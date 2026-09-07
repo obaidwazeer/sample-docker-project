@@ -32,3 +32,40 @@ jobs:
         run: |
           docker push \
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  deploy:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2 via SSH
+        run: |
+          # 1. Store the deployment key safely on the runner
+          echo "${{ secrets.EC2_SSH_KEY }}" > private_key
+          chmod 600 private_key
+
+          # 2. Lowercase the image name just like we did in the build step
+          IMAGE_NAME=$(echo "ghcr.io/${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
+          # 3. Connect to EC2 and execute the container deployment pipeline
+          ssh -o StrictHostKeyChecking=no \
+            -i private_key \
+            ${{ secrets.EC2_USERNAME }}@${{ secrets.EC2_HOST }} \
+            "# A. Log in to GHCR directly from the EC2 terminal using your Personal Access Token
+             echo '${{ secrets.GHCR_TOKEN }}' | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin && \
+             
+             # B. Pull the exact container image version we just built
+             sudo docker pull $IMAGE_NAME:${{ github.sha }} && \
+             
+             # C. Stop and remove the existing container if it is currently running
+             sudo docker stop my-running-app || true && \
+             sudo docker rm my-running-app || true && \
+             
+             # D. Run the brand-new container instance mapping port 8080 on EC2 to port 80 inside the container
+             sudo docker run -d \
+               --name my-running-app \
+               --restart always \
+               -p 8080:80 \
+               $IMAGE_NAME:${{ github.sha }} && \
+               
+             # E. Clean up older, unused dangling docker images to prevent filling up the disk
+             sudo docker image prune -f"
