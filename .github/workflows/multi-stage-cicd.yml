@@ -1,0 +1,32 @@
+name: Multi Stage CI/CD Pipeline
+on: 
+  push:
+    branches:
+      - master
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running Test"
+      
+  development:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - run: echo "Deploying development"
+  
+  staging:
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - run: echo "Deploying staging"
+  
+  production:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - run: echo "Deploying production"
+  
+      
