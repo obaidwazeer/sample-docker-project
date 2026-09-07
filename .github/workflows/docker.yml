@@ -2,15 +2,16 @@ name: Docker CI
 on:
   push:
     branches:
-      - main
+      - master
 jobs:
-  runs-on: ubuntu-latest
-  steps:
-    - name: chekcout code
-      uses: actions/checkout@v4
-    
-    - name: Build Docker Image
-      run: ducker build -t my-application:latest .
-
-    - name: Show Docker Images
-      run: docker images
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: chekcout code
+        uses: actions/checkout@v4
+      
+      - name: Build Docker Image
+        run: ducker build -t my-application:latest .
+  
+      - name: Show Docker Images
+        run: docker images
